@@ -1,0 +1,49 @@
+diff --git a/ggml/src/ggml-backend.cpp b/ggml/src/ggml-backend.cpp
+index 3520b4349..52275bec7 100644
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -2780,6 +2780,35 @@ static void ggml_backend_cpu_buffer_clear(ggml_backend_buffer_t buffer, uint8_t
+     memset(buffer->context, value, buffer->size);
+ }
+ 
++#if defined(__linux__)
++#include <sys/mman.h>
++#include <unistd.h>
++#endif
++
++// Clearing a big buffer to zero by writing zeros touches every page and makes all of it
++// resident. For plain anonymous memory (what ggml_aligned_malloc returns) it is enough to
++// drop the whole pages in the middle with madvise(MADV_DONTNEED): they read back as zeros
++// and only become resident when they are actually written. The partial pages at the two
++// ends are cleared normally.
++static void ggml_backend_cpu_buffer_clear_anon(ggml_backend_buffer_t buffer, uint8_t value) {
++    GGML_ASSERT(buffer);
++#if defined(__linux__)
++    if (value == 0 && buffer->size >= (1u << 20)) {
++        const uintptr_t page  = (uintptr_t) sysconf(_SC_PAGESIZE);
++        const uintptr_t begin = (uintptr_t) buffer->context;
++        const uintptr_t end   = begin + buffer->size;
++        const uintptr_t first = (begin + page - 1) & ~(page - 1); // first page boundary inside the buffer
++        const uintptr_t last  = end & ~(page - 1);                // last page boundary inside the buffer
++        if (last > first && madvise((void *) first, last - first, MADV_DONTNEED) == 0) {
++            memset((void *) begin, 0, first - begin);
++            memset((void *) last, 0, end - last);
++            return;
++        }
++    }
++#endif
++    memset(buffer->context, value, buffer->size);
++}
++
+ static const struct ggml_backend_buffer_i ggml_backend_cpu_buffer_i = {
+     /* .free_buffer     = */ ggml_backend_cpu_buffer_free_buffer,
+     /* .get_base        = */ ggml_backend_cpu_buffer_get_base,
+@@ -2790,7 +2819,7 @@ static const struct ggml_backend_buffer_i ggml_backend_cpu_buffer_i = {
+     /* .set_tensor_2d   = */ NULL,
+     /* .get_tensor_2d   = */ NULL,
+     /* .cpy_tensor      = */ ggml_backend_cpu_buffer_cpy_tensor,
+-    /* .clear           = */ ggml_backend_cpu_buffer_clear,
++    /* .clear           = */ ggml_backend_cpu_buffer_clear_anon,
+     /* .reset           = */ NULL,
+     /* .set_tensor_n    = */ NULL,
+     /* .get_tensor_n    = */ NULL,
