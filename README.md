@@ -1,8 +1,4 @@
-# memprof: a memory profiler that shows which memory is written, read, & held
-
-CSC 501 (Operating Systems) Fall 2026 Final Project
-
-**Team:** Cynthia Espinoza-Arredondo (cespino2), solo project
+# memprof: a memory profiler & visualizer
 
 ## Overview
 
