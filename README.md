@@ -1,6 +1,6 @@
-# memprof: a memory profiler that shows which memory is written, read, and held
+# memprof: a memory profiler that shows which memory is written, read, & held
 
-CSC 501 (Operating Systems) Fall 2026 final project
+CSC 501 (Operating Systems) Fall 2026 Final Project
 
 **Team:** Cynthia Espinoza-Arredondo (cespino2), solo project
 
@@ -17,7 +17,7 @@ program exits, `addr2line` turns the call stacks into file:line labels, and
 `heatmap.py` draws one strip per allocation (time on x-axis, position in the allocation
 on y-axis, 1 MB per row).
 
-It was checked on two known-answer programs (one for writes tracking and one for reads tracking) and used on GAPBS PageRank and llama.cpp.
+It was checked on two known-answer programs (a benchmark for writes tracking called microbench and a benchmark for reads tracking called readbench) and used on GAPBS PageRank and llama.cpp.
 In llama.cpp it found a 128 MB KV-cache buffer that is zero-filled at startup, and so
 fully resident, but barely used. A small patch to ggml lowers peak memory by 8.7 %
 (1416 MB to 1293 MB) with identical output.
